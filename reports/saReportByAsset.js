@@ -1,6 +1,36 @@
 import * as reportGetters from "./reportGetters.js";
 import * as reportUtils from "./reportUtils.js";
 
+const headers = [
+  {
+    datePulled: "Date Pulled",
+    code: "Code",
+    shortName: "Short Name",
+    collectionName: "Collection",
+    emass: "eMASS",
+    asset: "Asset",
+    nccm: "NCCM",
+    deviceType: "Device-Asset",
+    primOwner: "Primary Owner",
+    sysAdmin: "Sys Admin",
+    rmfAction: "RMF Action",
+    isso: "ISSO",
+    ccbSAActions: "CCB_SA_Actions",
+    other: "Other",
+    lastTouched: "Last Touched",
+    stigs: "STIGs",
+    benchmarks: "Benchmarks",
+    assessed: "Assessed",
+    submitted: "Submitted",
+    accepted: "Accepted",
+    rejected: "Rejected",
+    cat3: "CAT3",
+    cat2: "CAT2",
+    cat1: "CAT1",
+  },
+];
+
+
 async function runSAReportByAsset(tokens, emassMap) {
   try {
     var metrics = [];
@@ -8,35 +38,6 @@ async function runSAReportByAsset(tokens, emassMap) {
     let labelMap = new Map();
 
     var rows = [];
-    const headers = [
-      {
-        datePulled: "Date Pulled",
-        code: "Code",
-        shortName: "Short Name",
-        collectionName: "Collection",
-        emass: "eMASS",
-        asset: "Asset",
-        nccm: "NCCM",
-        deviceType: "Device-Asset",
-        primOwner: "Primary Owner",
-        sysAdmin: "Sys Admin",
-        rmfAction: "RMF Action",
-        isso: "ISSO",
-        ccbSAActions: "CCB_SA_Actions",
-        other: "Other",
-        lastTouched: "Last Touched",
-        stigs: "STIGs",
-        benchmarks: "Benchmarks",
-        assessed: "Assessed",
-        submitted: "Submitted",
-        accepted: "Accepted",
-        rejected: "Rejected",
-        cat3: "CAT3",
-        cat2: "CAT2",
-        cat1: "CAT1",
-      },
-    ];
-
     var today = new Date();
     var todayStr = today.toISOString().substring(0, 10);
 
@@ -281,4 +282,8 @@ function getRow(
   return rowData;
 }
 
-export { runSAReportByAsset };
+async function getHistoricalDataHeaders(){
+    return headers;
+}
+
+export { runSAReportByAsset, getHistoricalDataHeaders };
