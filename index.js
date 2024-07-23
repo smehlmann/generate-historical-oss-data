@@ -7,19 +7,7 @@ import { exit } from "process";
 import * as reportGetters from "./reports/reportGetters.js";
 import * as reportUtils from "./reports/reportUtils.js";
 import * as saReportByAsset from "./reports/saReportByAsset.js";
-
-/*const { got } = require("got");
-const open = require("open");
-const { stringify } = require('csv-stringify/sync');
-const  fs = require("fs");
-const { existsSync } = require("fs");
-const  reportGetters = require("./reports/reportGetters.js");
-const reportUtils = require("./reports/reportUtils.js");
-const saReportByAsset = require("./reports/saReportByAsset.js");
-const exit = require("process");*/
-
-//import { exit } from "process";
-//const { exit } = require("process");
+import promptSync from "prompt-sync";
 
 const oidcBase = "https://stigman.nren.navy.mil/auth/realms/np-stigman";
 const apiBase = "https://stigman.nren.navy.mil/np/api";
@@ -28,8 +16,20 @@ const scope =
   "openid stig-manager:collection stig-manager:user stig-manager:stig stig-manager:op";
 
 try {
+  var newFile = false;
+  const prompt = promptSync();
+  console.log("Do you want to start a new file?");
+  const resp = prompt("(y/n) ");
+  if (resp === "y" || resp === "Y") {
+    newFile = true;
+  }
+
   const emassNums = "";
   //const tokens = null;
+
+  process.argv.forEach((val, index) => {
+    console.log("command line arg" + index + ": " + val);
+  });
 
   (async () => {
     const fetchTokens = async () => {
@@ -48,16 +48,21 @@ try {
       return response;
     };
 
+    //////////////////////////////////////////////////////////////////////
+    /* Run 'Asset Collection per Primary Owner and System Admin' report */
+    //////////////////////////////////////////////////////////////////////
     const fetchHistoricalData = async (tokens, emassMap) => {
       var data = {};
-      const response = await saReportByAsset.runSAReportByAsset(tokens, emassMap);
+      const response = await saReportByAsset.runSAReportByAsset(
+        tokens,
+        emassMap
+      );
       //console.log(response);
       //data = await response.json();
       //return data;
       return response;
     };
-  
-  
+
     const tokens = await fetchTokens();
     //console.log(tokens);
 
@@ -70,69 +75,170 @@ try {
       tempCollections,
       emassNums
     );
-  
+
     if (emassMap.size === 0) {
       console.log("No Colections found!");
       exit;
     }
 
     console.log("Run SA Report by Asset");
+    //////////////////////////////////////////////////////////////////////
+    /* run report to get the data to be saved                           */
+    //////////////////////////////////////////////////////////////////////
     const rows = await fetchHistoricalData(tokens, emassMap);
     //console.log(rows);
 
-    const output = stringify(rows.rows, function (err, output) {
+    /*const output = stringify(rows.rows, function (err, output) {
       //header: true
       console.log(output);
-    });
-  
-    const headers = stringify(rows.headers, function (err, output) {
-      //header: true
-      console.log(output);
-    });
-  
-    saveHistoricalData(output, headers);
+    });*/
 
+    const output = JSON.stringify(rows.rows);
+
+    //////////////////////////////////////////////////////////////////////
+    /* Write report data to a file.                                     */
+    //////////////////////////////////////////////////////////////////////
+    await saveHistoricalData(rows.rows, newFile);
+    //await saveHistoricalData(rows.rows, newFile);
   })();
-
 } catch (e) {
   console.log(e);
 }
 
-function saveHistoricalData(rows, headers) {
+//////////////////////////////////////////////////////////////////////
+/* Write report data to a file. Append to the file, if it exits or 
+    create the file.                                                 */
+//////////////////////////////////////////////////////////////////////
+async function saveHistoricalData(reportData, newFile) {
   try {
-    /*const prompt = promptSync();
-
-    const filePath = prompt(
-      "Where do you want to save the file? Enter full path name."
-    );
-    console.log(filePath);*/
+    /*process.argv.forEach((val, index) => {
+      console.log("command line arg" + index + ": " + val);
+    });
+    if (process.argv.length > 2 && process.argv[2] === "new-file") {
+      newFile = true;
+    }*/
 
     const filePath =
       //"C:\\Users\\sandra.mehlmann\\Documents\\oss-stig-reports\\historicalData\\2024-06-11\\run-stigman-reports\\historicalData.csv";
-      "C:\\Users\\sandra.mehlmann\\Downloads\\historicalData.csv";
+      //"C:\\Users\\sandra.mehlmann\\Downloads\\historicalData.csv";
+      ".\\public\\historicalData.json";
+    const backupFile = filePath + ".bak";
+    //const mergedData = headers.concat(rows);
 
     if (existsSync(filePath)) {
-      console.log("The file exists.");
-      fs.appendFile(filePath, rows, function (err) {
-        if (err) {
-          return console.log(err);
-        } else {
-          console.log("Historical data added!");
-        }
-      });
+      console.log(filePath + " exists.");
+      if (newFile) {
+        fs.copyFile(filePath, backupFile, (err) => {
+          if (err) throw err;
+          console.log(filePath + " was copied to " + backupFile);
+        });
+        writeFile(filePath, reportData);
+      } else {
+        await appendFile(filePath, reportData);
+      }
     } else {
-      console.log("The file does not exist.");
-      const mergedData = headers.concat(rows);
-      fs.writeFile(filePath, mergedData, function (err) {
-        if (err) {
-          return console.log(err);
-        } else {
-          console.log("Historical data saved!");
-        }
-      });
+      console.log(filePath + " does not exist.");
+      writeFile(filePath, reportData);
     }
+
+    /*fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.error("Error reading the file", err);
+        return;
+      }
+
+      // Step 3: Parse the JSON data
+      try {
+        const jsonData = JSON.parse(data);
+        console.log("JSON data:", jsonData);
+      } catch (err) {
+        console.error("Error parsing JSON data", err);
+      }
+    });*/
+
+    //const myData = readFile(filePath);
+    //console.log(myData);
   } catch (e) {
     console.log(e);
+  }
+}
+
+function writeFile(filePath, reportData) {
+  try {
+    const jsonData = JSON.stringify(reportData, null, 2);
+
+    //fs.writeFileSync(reportData);
+
+    //fs.writeFile(filePath, JSON.stringify(reportData, null, 2), (err) => {
+
+    fs.writeFile(filePath, jsonData, "utf8", function (err) {
+      if (err) {
+        return console.log(err);
+      } else {
+        console.log("Data written to " + filePath + "!");
+      }
+    });
+  } catch (e) {
+    throw e;
+  }
+}
+
+async function appendFile(filePath, reportData) {
+  try {
+    const data = await readFile(filePath);
+    if (data) {
+      //var jsonData = JSON.parse(reportData);
+      //jsonData.push(data);
+      //var jsonData = reportData;
+      //jsonData.concat(data);
+      data.forEach(element => {
+        reportData.push(element)
+      })
+
+      writeFile(filePath, reportData);
+    }
+  } catch (e) {
+    throw e;
+  }
+  /*fs.appendFile(filePath, reportData, function (err) {
+    if (err) {
+      return console.log(err);
+    } else {
+      console.log("Data appended to " + filePath + "!");
+    }
+  });*/
+}
+
+function readFile(filePath) {
+  try {
+    var jsonData;
+    const data = fs.readFileSync(filePath);
+    if (data) {
+      jsonData = JSON.parse(data);
+      console.log("JSON data:", jsonData);
+      //return data;
+    }
+
+    return jsonData;
+
+    /*fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) {
+        console.error("Error reading the file", err);
+        return jsonData;
+      }
+
+      // Step 3: Parse the JSON data
+      try {
+        jsonData = JSON.parse(data);
+        //console.log("JSON data:", jsonData);
+        return jsonData;
+      } catch (err) {
+        console.error("Error parsing JSON data", err);
+      }
+    });
+    return jsonData;*/
+  } catch (e) {
+    throw e;
   }
 }
 
