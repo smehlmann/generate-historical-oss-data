@@ -191,11 +191,14 @@ async function appendFile(filePath, reportData) {
       //jsonData.push(data);
       //var jsonData = reportData;
       //jsonData.concat(data);
-      data.forEach(element => {
+      /*data.forEach(element => {
         reportData.push(element)
-      })
+      })*/
+      reportData.forEach((element) => {
+        data.push(element);
+      });
 
-      writeFile(filePath, reportData);
+      writeFile(filePath, data);
     }
   } catch (e) {
     throw e;
