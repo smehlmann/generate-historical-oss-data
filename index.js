@@ -1,6 +1,5 @@
 import got from "got";
 import open from "open";
-import { stringify } from "csv-stringify/sync";
 import fs from "fs";
 import { existsSync } from "fs";
 import { exit } from "process";
@@ -9,8 +8,16 @@ import * as reportUtils from "./reports/reportUtils.js";
 import * as saReportByAsset from "./reports/saReportByAsset.js";
 import promptSync from "prompt-sync";
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Application that runs report 2, 'Asset Collection per Primary Owner and System Admin, and saves the //
+// results to a file that can be used to populate charts on the OSS STIG Report Generator.             //
+//    User will indicate whether a new file should be started or an existing file appended to.         //
+//    Report 2 is run.                                                                                 //
+//    If a new file is started, the existing file is copied to a '.bak' file and the results of report //
+//    2 are written to the file.                                                                       //
+//    If a new file is not being started, results of report 2 are appended to the file.                //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 const oidcBase = "https://stigman.nren.navy.mil/auth/realms/np-stigman";
-const apiBase = "https://stigman.nren.navy.mil/np/api";
 const client_id = "np-stig-manager";
 const scope =
   "openid stig-manager:collection stig-manager:user stig-manager:stig stig-manager:op";
@@ -57,9 +64,6 @@ try {
         tokens,
         emassMap
       );
-      //console.log(response);
-      //data = await response.json();
-      //return data;
       return response;
     };
 
@@ -87,19 +91,12 @@ try {
     //////////////////////////////////////////////////////////////////////
     const rows = await fetchHistoricalData(tokens, emassMap);
     //console.log(rows);
-
-    /*const output = stringify(rows.rows, function (err, output) {
-      //header: true
-      console.log(output);
-    });*/
-
     const output = JSON.stringify(rows.rows);
 
     //////////////////////////////////////////////////////////////////////
     /* Write report data to a file.                                     */
     //////////////////////////////////////////////////////////////////////
     await saveHistoricalData(rows.rows, newFile);
-    //await saveHistoricalData(rows.rows, newFile);
   })();
 } catch (e) {
   console.log(e);
@@ -111,16 +108,8 @@ try {
 //////////////////////////////////////////////////////////////////////
 async function saveHistoricalData(reportData, newFile) {
   try {
-    /*process.argv.forEach((val, index) => {
-      console.log("command line arg" + index + ": " + val);
-    });
-    if (process.argv.length > 2 && process.argv[2] === "new-file") {
-      newFile = true;
-    }*/
 
     const filePath =
-      //"C:\\Users\\sandra.mehlmann\\Documents\\oss-stig-reports\\historicalData\\2024-06-11\\run-stigman-reports\\historicalData.csv";
-      //"C:\\Users\\sandra.mehlmann\\Downloads\\historicalData.csv";
       ".\\public\\historicalData.json";
     const backupFile = filePath + ".bak";
     //const mergedData = headers.concat(rows);
@@ -140,36 +129,17 @@ async function saveHistoricalData(reportData, newFile) {
       console.log(filePath + " does not exist.");
       writeFile(filePath, reportData);
     }
-
-    /*fs.readFile(filePath, (err, data) => {
-      if (err) {
-        console.error("Error reading the file", err);
-        return;
-      }
-
-      // Step 3: Parse the JSON data
-      try {
-        const jsonData = JSON.parse(data);
-        console.log("JSON data:", jsonData);
-      } catch (err) {
-        console.error("Error parsing JSON data", err);
-      }
-    });*/
-
-    //const myData = readFile(filePath);
-    //console.log(myData);
   } catch (e) {
     console.log(e);
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Write report data to a file. Overwrite existing file content.                                     //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 function writeFile(filePath, reportData) {
   try {
     const jsonData = JSON.stringify(reportData, null, 2);
-
-    //fs.writeFileSync(reportData);
-
-    //fs.writeFile(filePath, JSON.stringify(reportData, null, 2), (err) => {
 
     fs.writeFile(filePath, jsonData, "utf8", function (err) {
       if (err) {
@@ -181,19 +151,19 @@ function writeFile(filePath, reportData) {
   } catch (e) {
     throw e;
   }
+
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Append report data to a file.                                                                      //
+//    Read the existing file.                                                                         //
+//    Append data generated by the report to the data read from the file.                             //
+//    Write the data to the file, overwriting existing file content.                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function appendFile(filePath, reportData) {
   try {
     const data = await readFile(filePath);
     if (data) {
-      //var jsonData = JSON.parse(reportData);
-      //jsonData.push(data);
-      //var jsonData = reportData;
-      //jsonData.concat(data);
-      /*data.forEach(element => {
-        reportData.push(element)
-      })*/
       reportData.forEach((element) => {
         data.push(element);
       });
@@ -203,15 +173,11 @@ async function appendFile(filePath, reportData) {
   } catch (e) {
     throw e;
   }
-  /*fs.appendFile(filePath, reportData, function (err) {
-    if (err) {
-      return console.log(err);
-    } else {
-      console.log("Data appended to " + filePath + "!");
-    }
-  });*/
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Read the contents of the specified file abd return the data in JSON format                         //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 function readFile(filePath) {
   try {
     var jsonData;
@@ -219,27 +185,9 @@ function readFile(filePath) {
     if (data) {
       jsonData = JSON.parse(data);
       console.log("JSON data:", jsonData);
-      //return data;
     }
 
     return jsonData;
-
-    /*fs.readFile(filePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error("Error reading the file", err);
-        return jsonData;
-      }
-
-      // Step 3: Parse the JSON data
-      try {
-        jsonData = JSON.parse(data);
-        //console.log("JSON data:", jsonData);
-        return jsonData;
-      } catch (err) {
-        console.error("Error parsing JSON data", err);
-      }
-    });
-    return jsonData;*/
   } catch (e) {
     throw e;
   }
@@ -267,9 +215,6 @@ async function getToken(device_code) {
       .post(
         "https://stigman.nren.navy.mil/auth/realms/np-stigman/protocol/openid-connect/token",
         {
-          //const response = await got.post('https://stigman.nren.navy.mil/auth/realms/np-stigman/protocol/openid-connect/token',{
-          //const response = await got.post('http://localhost:8080/realms/stigman/protocol/openid-connect/token', {
-          //const response = await got.post('https://login.microsoftonline.com/863af28d-88be-4b4d-a58a-d5c40ee1fa22/oauth2/v2.0/token', {
           form: {
             grant_type: "urn:ietf:params:oauth:grant-type:device_code",
             client_id: "np-stig-manager",
@@ -298,52 +243,6 @@ async function getDeviceCode(url, client_id, scope) {
 
 async function getOidcMetadata(url) {
   return await got.get(`${url}/.well-known/openid-configuration`).json();
-}
-
-async function getMetricsData(accessToken, myUrl) {
-  //console.log("getMetricsData: Requesting data.")
-  return await got
-    .get(myUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
-    .json();
-}
-
-async function getCsvOutput(rows) {
-  await stringify(
-    [
-      ["1", "2", "3", "4"],
-      ["a", "b", "c", "d"],
-    ],
-    function (err, output) {
-      console.log(output);
-    }
-  );
-}
-
-function getRow(collectionName, stigs, assets) {
-  var assetNames = "";
-  var benchmarkId = stigs.benchmarkId;
-  var stigVersion = stigs.lastRevisionStr;
-
-  for (var i = 0; i < assets.length; i++) {
-    if (i < assets.length - 1) {
-      assetNames += assets[i].name + ", ";
-    } else {
-      assetNames += assets[i].name;
-    }
-  }
-
-  var rowData = {
-    collectionName: collectionName,
-    benchmark: benchmarkId,
-    stigVersion: stigVersion,
-    assetNames: assetNames,
-  };
-
-  return rowData;
 }
 
 async function getTokens(oidcBase, client_id, scope) {
