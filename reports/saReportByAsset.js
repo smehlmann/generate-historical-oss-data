@@ -20,6 +20,7 @@ const headers = [
     lastTouched: "Last Touched",
     stigs: "STIGs",
     benchmarks: "Benchmarks",
+    checks: "Checks",
     assessed: "Assessed",
     submitted: "Submitted",
     accepted: "Accepted",
@@ -198,6 +199,7 @@ function getRow(
   const numSubmitted = metrics.metrics.statuses.submitted;
   const numAccepted = metrics.metrics.statuses.accepted;
   const numRejected = metrics.metrics.statuses.rejected;
+  const totalChecks = numAssessments;
 
   var maxTouchTs = metrics.metrics.maxTouchTs;
   var touchDate = new Date(maxTouchTs);
@@ -270,6 +272,7 @@ function getRow(
     lastTouched: lastTouched,
     stigs: metrics.benchmarkIds.length,
     benchmarks: benchmarkIDs,
+    checks: totalChecks,
     assessed: avgAssessed + "%",
     submitted: avgSubmitted + "%",
     accepted: avgAccepted + "%",

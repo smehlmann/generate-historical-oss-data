@@ -1,9 +1,5 @@
 import got from 'got';
-import open from 'open';
-import promptSync from 'prompt-sync';
 import { stringify } from 'csv-stringify/sync';
-import fs from 'fs';
-import path from 'path';
 
 const apiBase = 'https://stigman.nren.navy.mil/np/api';
 
