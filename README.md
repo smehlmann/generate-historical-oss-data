@@ -1,4 +1,4 @@
-# Command line excutable for generating and saving  Report 2. (generste-historical-oss-data)
+# Command line excutable for generating and saving  Report 2. (generate-historical-oss-data)
 
 ## Generate the executable
 
