@@ -9,7 +9,6 @@ const headers = [
     collectionName: "Collection",
     emass: "eMASS",
     asset: "Asset",
-    nccm: "NCCM",
     deviceType: "Device-Asset",
     primOwner: "Primary Owner",
     sysAdmin: "Sys Admin",
@@ -17,10 +16,8 @@ const headers = [
     isso: "ISSO",
     ccbSAActions: "CCB_SA_Actions",
     other: "Other",
-    lastTouched: "Last Touched",
     stigs: "STIGs",
     benchmarks: "Benchmarks",
-    checks: "Checks",
     assessed: "Assessed",
     submitted: "Submitted",
     accepted: "Accepted",
@@ -28,9 +25,10 @@ const headers = [
     cat3: "CAT3",
     cat2: "CAT2",
     cat1: "CAT1",
+    cklWebOrDatabase: "Web or DB",
+    checks: "Checks"
   },
 ];
-
 
 async function runSAReportByAsset(tokens, emassMap) {
   try {
@@ -52,13 +50,6 @@ async function runSAReportByAsset(tokens, emassMap) {
         var collectionName = collections[i].name;
         var collectionEmass = collections[i].metadata.eMASS;
         //console.log("runSAReportByAsset collectionName: " + collectionName);
-
-        if (!collectionName.startsWith("NP_C")) {
-          continue;
-        }
-        if (collectionName === "NP_C10-NCCM_Zone B") {
-          //console.log("runSAReportByAsset collectionName: " + collectionName);
-        }
 
         //get the collection assets
         var assets = await reportGetters.getAssetsByCollection(
@@ -102,9 +93,6 @@ async function runSAReportByAsset(tokens, emassMap) {
         }
 
         for (var jMetrics = 0; jMetrics < metrics.length; jMetrics++) {
-          if (metrics[jMetrics].name === "NP0902WK400011") {
-            //console.log("assetName: " + metrics[jMetrics].name);
-          }
 
           var assetIdx = assets.findIndex(
             (t) => t.name === metrics[jMetrics].name
@@ -124,6 +112,15 @@ async function runSAReportByAsset(tokens, emassMap) {
             }
           }
 
+          var cklWebOrDatabase = "";
+          if (
+            assets[assetIdx] &&
+            assets[assetIdx].metadata &&
+            assets[assetIdx].metadata.cklWebOrDatabase
+          ) {
+            cklWebOrDatabase = assets[assetIdx].metadata.cklWebOrDatabase;
+          }
+
           var myData = getRow(
             todayStr,
             collections[i],
@@ -131,7 +128,8 @@ async function runSAReportByAsset(tokens, emassMap) {
             labelMap,
             assets[assetIdx],
             emassNum,
-            assetEmassMap
+            assetEmassMap,
+            cklWebOrDatabase
           );
           if (myData) {
             rows.push(myData);
@@ -156,7 +154,8 @@ function getRow(
   labelMap,
   asset,
   emassNum,
-  assetEmassMap
+  assetEmassMap,
+  cklWebOrDatabase
 ) {
   var assetMetadata = "";
   var eMass = "";
@@ -261,7 +260,6 @@ function getRow(
     collectionName: collectionName,
     emass: eMass,
     asset: metrics.name,
-    nccm: assetMetadata,
     deviceType: collectionMetadata.device,
     primOwner: collectionMetadata.primOwner,
     sysAdmin: collectionMetadata.sysAdmin,
@@ -269,10 +267,8 @@ function getRow(
     isso: collectionMetadata.isso,
     ccbSAActions: collectionMetadata.ccbSAActions,
     other: collectionMetadata.other,
-    lastTouched: lastTouched,
     stigs: metrics.benchmarkIds.length,
     benchmarks: benchmarkIDs,
-    checks: totalChecks,
     assessed: avgAssessed + "%",
     submitted: avgSubmitted + "%",
     accepted: avgAccepted + "%",
@@ -280,13 +276,15 @@ function getRow(
     cat3: sumOfCat3,
     cat2: sumOfCat2,
     cat1: sumOfCat1,
+    cklWebOrDatabase: cklWebOrDatabase,
+    checks: totalChecks
   };
 
   return rowData;
 }
 
-async function getHistoricalDataHeaders(){
-    return headers;
+async function getHistoricalDataHeaders() {
+  return headers;
 }
 
 export { runSAReportByAsset, getHistoricalDataHeaders };
