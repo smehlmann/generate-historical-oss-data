@@ -26,6 +26,7 @@ const headers = [
     cat2: "CAT2",
     cat1: "CAT1",
     cklWebOrDatabase: "Web or DB",
+    delinquent: "Deliquent",
     checks: "Checks"
   },
 ];
@@ -231,10 +232,14 @@ function getRow(
   var avgAccepted = 0;
   var avgRejected = 0;
   var temp = 0;
+  var delinquent = 'No';
 
   if (numAssessments) {
     temp = (numAssessed / numAssessments) * 100;
     avgAssessed = temp.toFixed(2);
+    if(temp < 100.00){
+      delinquent = 'Yes';
+    }
 
     temp = ((numSubmitted + numAccepted + numRejected) / numAssessments) * 100;
     avgSubmitted = temp.toFixed(2);
