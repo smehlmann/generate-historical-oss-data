@@ -282,6 +282,7 @@ function getRow(
     cat2: sumOfCat2,
     cat1: sumOfCat1,
     cklWebOrDatabase: cklWebOrDatabase,
+    delinquent: delinquent,
     checks: totalChecks
   };
 
