@@ -26,7 +26,7 @@ const headers = [
     cat2: "CAT2",
     cat1: "CAT1",
     cklWebOrDatabase: "Web or DB",
-    delinquent: "Deliquent",
+    delinquent: "Delinquent",
     checks: "Checks"
   },
 ];
